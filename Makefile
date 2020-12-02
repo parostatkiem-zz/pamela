@@ -15,7 +15,7 @@ release: build-image push-image
 
 pull-licenses-local:
 ifdef LICENSE_PULLER_PATH
-	bash $(LICENSE_PULLER_PATH) --dirs-to-pulling="./"
+	bash $(LICENSE_PULLER_PATH)
 else
 	mkdir -p licenses
 endif
