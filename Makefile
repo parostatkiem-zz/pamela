@@ -6,7 +6,7 @@ TAG := $(DOCKER_TAG)
 
 
 build-image: 
-	docker build -t $(APP_NAME) -f Dockerfile ..
+	docker build -t $(APP_NAME) -f Dockerfile .
 push-image:
 	docker tag $(APP_NAME):latest $(IMG_NAME):$(TAG)
 	docker push $(IMG_NAME):$(TAG)
