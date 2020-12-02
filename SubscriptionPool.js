@@ -28,8 +28,8 @@ class Subscription {
     stream.on("data", (line) => {
       const data = JSON.parse(line);
 
-      const createdAt = data.object?.metadata?.creationTimestamp;
-      if (data.type === "ADDED" && createdAt && new Date(createdAt) < new Date()) return; // risky but I like to risk; skip ADDED type events bombing right after the subscription has been opened
+      // const createdAt = data.object?.metadata?.creationTimestamp;
+      // if (data.type === "ADDED" && createdAt && new Date(createdAt) < new Date()) return; // risky but I like to risk; skip ADDED type events bombing right after the subscription has been opened
 
       if (configForResource.addJSONfield && data?.object)
         addJsonField(data.object, configForResource.JSONfieldExtraHeader);
