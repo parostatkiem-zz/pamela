@@ -28,7 +28,7 @@ app.use(function (req, res, next) {
 });
 app.use(function (err, req, res, next) {
   console.error(err);
-  res.status(500).sent("Internal server error");
+  res.status(500).send("Internal server error");
 });
 
 const port = process.env.PORT || 3001;
