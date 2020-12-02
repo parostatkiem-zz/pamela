@@ -5,7 +5,7 @@ IMG_NAME := $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)/$(APP_NAME)
 TAG := $(DOCKER_TAG)
 
 
-build-image: pull-licenses
+build-image: 
 	docker build -t $(APP_NAME) -f Dockerfile ..
 push-image:
 	docker tag $(APP_NAME):latest $(IMG_NAME):$(TAG)
