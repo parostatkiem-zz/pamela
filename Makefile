@@ -1,5 +1,4 @@
-APP_NAME = core-ui
-APP_PATH = core-ui
+APP_NAME = pamela
 BUILDPACK = eu.gcr.io/kyma-project/test-infra/buildpack-node:PR-2951
 IMG_NAME := $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)/$(APP_NAME)
 TAG := $(DOCKER_TAG)
