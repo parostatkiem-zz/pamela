@@ -17,12 +17,11 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
       });
 
       const response = await fetch(url, opts);
-
       if (!response.ok)
         throw new HttpError("Failed to get resource " + name, response.statusText, response.status);
       const responseJSON = await response.json();
       addJsonFieldToItems(responseJSON, extraItemHeader);
-      res.send(response);
+      res.send(responseJSON);
     } catch (e) {
       if (e instanceof HttpError) e.send(res);
       else {
@@ -39,7 +38,7 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
   isNamespaced = true
 ) => {
   app.put(path, async (req, res) => {
-    const { json } = req.body;
+    const { mergeJson } = req.body;
     const { name, namespace } = req.params;
 
     try {
@@ -47,9 +46,9 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
       const opts = await injectHeaders(
         {
           agent,
-          body: JSON.stringify(json),
+          body: JSON.stringify(mergeJson),
           headers: {
-            "content-type": "application/strategic-merge-patch+json",
+            "content-type": "application/json-patch+json",
           },
         },
         req.headers,
@@ -59,9 +58,7 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
 
       const url = calculateURL(urlTemplate, { namespace: isNamespaced ? namespace : undefined, name });
 
-      const response = await fetch(url, { method: "UPDATE", ...opts });
-      console.log(response);
-
+      const response = await fetch(url, { method: "PATCH", ...opts });
       if (!response.ok)
         throw new HttpError("Failed to update resource " + name, response.statusText, response.status);
       res.send(response);
