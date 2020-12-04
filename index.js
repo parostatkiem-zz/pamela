@@ -8,6 +8,7 @@ const SubscriptionPool = require("./SubscriptionPool");
 import { initializeKubeconfig } from "./utils/kubeconfig";
 import createPodEndpoints from "./endpoints/pods";
 import { initializeApp } from "./utils/initialization";
+import { HttpError } from "./utils/other";
 
 const app = express();
 app.use(bodyParser.json());
@@ -27,7 +28,11 @@ app.use(function (req, res, next) {
   res.status(404).send("URL " + req.url + " not found");
 });
 app.use(function (err, req, res, next) {
-  console.error(err);
+  if (err instanceof HttpError) {
+    e.send(res);
+    return;
+  }
+
   res.status(500).send("Internal server error");
 });
 

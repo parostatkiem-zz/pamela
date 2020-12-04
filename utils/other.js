@@ -25,3 +25,16 @@ export const calculateURL = (template, variables) => {
   if (~output.indexOf("{")) throw new Error("Not every variable supplied for template " + template);
   return output;
 };
+
+export class HttpError extends Error {
+  constructor(title, message, statusCode) {
+    super(message);
+    this.title = title;
+    this.code = statusCode;
+  }
+
+  send(response) {
+    const { title, message, code } = this;
+    response.status(code).json({ title, message });
+  }
+}

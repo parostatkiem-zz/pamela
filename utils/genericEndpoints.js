@@ -1,6 +1,6 @@
 import injectHeaders from "./headerInjector";
 import fetch from "node-fetch";
-import { addJsonFieldToItems, calculateURL } from "./other";
+import { addJsonFieldToItems, calculateURL, HttpError } from "./other";
 
 export const createGenericGetEndpoint = (kubeconfig, app) => (
   path,
@@ -18,22 +18,17 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
 
       const response = await fetch(url, opts);
 
-      if (!response.ok) {
-        console.warn(
-          `Request to ${url} ended with error. Message: ${response.message} Status: ${response.status}`
-        );
-        res.status(response.status);
-        res.send(response.statusText);
-        return;
-      }
-
+      if (!response.ok)
+        throw new HttpError("Failed to get resource " + name, response.statusText, response.status);
       const responseJSON = await response.json();
       addJsonFieldToItems(responseJSON, extraItemHeader);
-      res.send(responseJSON);
+      res.send(response);
     } catch (e) {
-      console.error(e);
-      res.status(500);
-      res.send("Internal server error");
+      if (e instanceof HttpError) e.send(res);
+      else {
+        console.error(e);
+        res.status(500).send("Internal server error occured while updating resource " + name);
+      }
     }
   });
 };
@@ -64,13 +59,18 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
 
       const url = calculateURL(urlTemplate, { namespace: isNamespaced ? namespace : undefined, name });
 
-      const response = await fetch(url, { method: "PATCH", ...opts });
-      if (!response.ok) throw new Error("Failed to update resource " + name);
+      const response = await fetch(url, { method: "UPDATE", ...opts });
+      console.log(response);
+
+      if (!response.ok)
+        throw new HttpError("Failed to update resource " + name, response.statusText, response.status);
       res.send(response);
     } catch (e) {
-      console.error(e);
-      res.status(500);
-      res.send("Internal server error");
+      if (e instanceof HttpError) e.send(res);
+      else {
+        console.error(e);
+        res.status(500).send("Internal server error occured while resource " + name);
+      }
     }
   });
 };
@@ -85,11 +85,15 @@ export const createGenericDeleteEndpoint = (kubeconfig, app) => (path, urlTempla
       const url = calculateURL(urlTemplate, { namespace: isNamespaced ? namespace : undefined, name });
 
       const response = await fetch(url, { method: "DELETE", ...opts });
+      if (!response.ok)
+        throw new HttpError("Failed to delete resource " + name, response.statusText, response.status);
       res.send(response);
     } catch (e) {
-      console.error(e);
-      res.status(500);
-      res.send("Internal server error");
+      if (e instanceof HttpError) e.send(res);
+      else {
+        console.error(e);
+        res.status(500).send("Internal server error occured while deleting resource " + name);
+      }
     }
   });
 };
