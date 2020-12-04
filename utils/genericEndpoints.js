@@ -33,7 +33,7 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
     } catch (e) {
       console.error(e);
       res.status(500);
-      res.send(e.message);
+      res.send("Internal server error");
     }
   });
 };
@@ -70,7 +70,7 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
     } catch (e) {
       console.error(e);
       res.status(500);
-      res.send(e.message);
+      res.send("Internal server error");
     }
   });
 };
@@ -89,7 +89,7 @@ export const createGenericDeleteEndpoint = (kubeconfig, app) => (path, urlTempla
     } catch (e) {
       console.error(e);
       res.status(500);
-      res.send(e.message);
+      res.send("Internal server error");
     }
   });
 };
