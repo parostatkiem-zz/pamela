@@ -23,11 +23,9 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
       addJsonFieldToItems(responseJSON, extraItemHeader);
       res.send(responseJSON);
     } catch (e) {
+      console.error(e);
       if (e instanceof HttpError) e.send(res);
-      else {
-        console.error(e);
-        res.status(500).send("Internal server error occured while updating resource " + name);
-      }
+      else res.status(500).send("Internal server error occured while updating resource " + name);
     }
   });
 };
@@ -63,11 +61,9 @@ export const createGenericJsonUpdateEndpoint = (kubeconfig, app) => (
         throw new HttpError("Failed to update resource " + name, response.statusText, response.status);
       res.send(response);
     } catch (e) {
+      console.error(e);
       if (e instanceof HttpError) e.send(res);
-      else {
-        console.error(e);
-        res.status(500).send("Internal server error occured while resource " + name);
-      }
+      else res.status(500).send("Internal server error occured while resource " + name);
     }
   });
 };
@@ -86,11 +82,9 @@ export const createGenericDeleteEndpoint = (kubeconfig, app) => (path, urlTempla
         throw new HttpError("Failed to delete resource " + name, response.statusText, response.status);
       res.send(response);
     } catch (e) {
+      console.error(e);
       if (e instanceof HttpError) e.send(res);
-      else {
-        console.error(e);
-        res.status(500).send("Internal server error occured while deleting resource " + name);
-      }
+      else res.status(500).send("Internal server error occured while deleting resource " + name);
     }
   });
 };
