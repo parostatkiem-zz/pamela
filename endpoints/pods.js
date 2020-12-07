@@ -1,12 +1,12 @@
 import {
-  createGenericGetEndpoint,
+  createGenericListEndpoint,
   createGenericDeleteEndpoint,
   createGenericJsonUpdateEndpoint,
   createGenericSubscriptionEndpoint,
 } from "../utils/genericEndpoints";
 
 export default function createPodEndpoints(kubeconfig, app) {
-  createGenericGetEndpoint(kubeconfig, app)(
+  createGenericListEndpoint(kubeconfig, app)(
     "/namespaces/:namespace/pods",
     `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods`,
     true,

@@ -2,7 +2,7 @@ import injectHeaders from "./headerInjector";
 import fetch from "node-fetch";
 import { addJsonFieldToItems, calculateURL, HttpError } from "./other";
 
-export const createGenericGetEndpoint = (kubeconfig, app) => (
+export const createGenericListEndpoint = (kubeconfig, app) => (
   path,
   urlTemplate,
   isNamespaced = true,
@@ -18,7 +18,7 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
 
       const response = await fetch(url, opts);
       if (!response.ok)
-        throw new HttpError("Failed to get resource " + name, response.statusText, response.status);
+        throw new HttpError("Failed to get resources " + url, response.statusText, response.status);
       const responseJSON = await response.json();
       addJsonFieldToItems(responseJSON, extraItemHeader);
       res.send(responseJSON);
