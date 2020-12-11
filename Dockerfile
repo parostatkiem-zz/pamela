@@ -1,4 +1,9 @@
-FROM node:14.15.1-alpine3.12
+FROM alpine:edge
+RUN apk add --update nodejs npm openssl
+
+# temporary fix for a vulnerability caused by the outdated Openssl version installed by default
+RUN apk add --update openssl
+RUN apk info openssl
 
 WORKDIR /app
 
