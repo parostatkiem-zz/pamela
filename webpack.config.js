@@ -17,27 +17,6 @@ module.exports = {
   },
   resolve: {
     extensions: [".js"],
-    // alias: {
-    //   util: "util",
-    //   assert: "assert",
-    //   url: "url",
-    //   os: "os",
-    //   vm: "vm-browserify",
-    //   //   child_process: "empty",
-    //   buffer: "buffer",
-    // },
-    // fallback: {
-    //   fs: false,
-    //   tls: false,
-    //   net: false,
-    //   path: false,
-    //   zlib: false,
-    //   http: false,
-    //   https: false,
-    //   stream: false,
-    //   crypto: false,
-    //   "crypto-browserify": false,
-    // },
   },
   output: {
     path: path.resolve(__dirname, "."),
