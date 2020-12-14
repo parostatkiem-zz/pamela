@@ -6,7 +6,7 @@
   "scripts": {
     "watch": "NODE_TLS_REJECT_UNAUTHORIZED=0 nodemon --exec babel-node index.js",
     "build": "webpack",
-    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 NODE_ENV=production node pamela-production.js",
+    "start": "NODE_ENV=production node pamela-production.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
