@@ -21,5 +21,8 @@ RUN npm run build
 FROM base AS release
 WORKDIR /app
 COPY --from=build /app/pamela-production.js ./
+COPY package* ./
+RUN npm ci --only=production
+
 EXPOSE 3001
 CMD [ "npm", "start" ]
