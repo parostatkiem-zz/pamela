@@ -5,6 +5,8 @@ const bodyParser = require("body-parser");
 const http = require("http");
 const SubscriptionPool = require("./SubscriptionPool");
 
+import compression from "compression";
+
 import { initializeKubeconfig } from "./utils/kubeconfig";
 import createPodEndpoints from "./endpoints/pods";
 import { initializeApp } from "./utils/initialization";
@@ -22,6 +24,7 @@ createPodEndpoints(kubeconfig, app);
 new SubscriptionPool(io, kubeconfig, app);
 
 initializeApp(app, kubeconfig);
+app.use(compression()); //Compress all routes
 
 // keep the error handlers as the last routes added to the app
 app.use(function (req, res, next) {
