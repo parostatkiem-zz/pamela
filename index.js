@@ -12,6 +12,7 @@ import createPodEndpoints from "./endpoints/pods";
 import createDeploymentEndpoints from "./endpoints/deployments";
 import { initializeApp } from "./utils/initialization";
 import { HttpError } from "./utils/other";
+import { KubernetesObjectApi } from "@kubernetes/client-node";
 
 const app = express();
 app.use(bodyParser.json());
@@ -20,8 +21,10 @@ const kubeconfig = initializeKubeconfig();
 const server = http.createServer(app);
 const io = socketIO(server, { transports: ["websocket", "polling"] });
 app.set("subscriptionEndpoints", {});
+
+const client = KubernetesObjectApi.makeApiClient(kubeconfig);
 createPodEndpoints(kubeconfig, app);
-createDeploymentEndpoints(kubeconfig, app);
+createDeploymentEndpoints(kubeconfig, client, app);
 
 new SubscriptionPool(io, kubeconfig, app);
 

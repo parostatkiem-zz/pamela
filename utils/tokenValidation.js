@@ -11,7 +11,7 @@ async function addTokenToCache(tokenData, app) {
 
 export async function validateToken(token, app) {
   if (!token) throw new Error("No JWT token provided");
-  const tokenNaked = token.startsWith("Bearer ") ? token.slice(7, token.length) : token; // strip "Bearer " from the start
+  const tokenNaked = token.replace("Bearer ", ""); // strip "Bearer " from the start
   const tokenFromCache = app.get(CACHE_KEY).find((t) => t.token === tokenNaked);
   if (tokenFromCache && !hasCachedTokenExpired(tokenFromCache)) {
     // verified from cache
@@ -39,7 +39,10 @@ export async function validateToken(token, app) {
         reject("Token verification failed"); // todo: throw a 401 in this case
       }
       console.log("Verified and cached a new token for user", decoded.email); // not sure if we need this log
-      addTokenToCache({ token: tokenNaked, email: decoded.email, expires: decoded.exp }, app);
+      addTokenToCache(
+        { token: tokenNaked, email: decoded.email, expires: decoded.exp },
+        app
+      );
       resolve(decoded);
     });
   });

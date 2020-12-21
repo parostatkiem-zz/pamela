@@ -1,6 +1,4 @@
-import * as k8s from "@kubernetes/client-node";
-
-export default function createDeploymentEndpoints(kubeconfig, app) {
+export default function createDeploymentEndpoints(kubeconfig, client, app) {
   app.post("/deployments/create", async (req, res) => {
     const deployment = req.body;
 
@@ -8,7 +6,7 @@ export default function createDeploymentEndpoints(kubeconfig, app) {
         deployment.labels.app = deployment.name;
     }
 
-    const yamlDeployment = {
+    const runtimeDeployment = {
       apiVersion: "apps/v1",
       kind: "Deployment",
       metadata: {
@@ -26,22 +24,19 @@ export default function createDeploymentEndpoints(kubeconfig, app) {
               {
                 name: deployment.name,
                 image: deployment.dockerImage,
+                resources: {
+                    requests: deployment.requests,
+                    limits: deployment.limits,
+                }
               },
             ],
           },
         },
-        resources: {
-            requests: deployment.requests,
-            limits: deployment.limits,
-        }
       },
     };
 
-    const client = k8s.KubernetesObjectApi.makeApiClient(kubeconfig); // todo pull up
-
     try {
-      const response = await client.create(yamlDeployment);
-
+      const response = await client.create(runtimeDeployment);
       res.send(response.body);
     } catch (e) {
       console.warn(e);
