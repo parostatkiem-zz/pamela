@@ -8,9 +8,11 @@ const SubscriptionPool = require("./SubscriptionPool");
 import compression from "compression";
 
 import { initializeKubeconfig } from "./utils/kubeconfig";
-import createPodEndpoints from "./endpoints/pods";
 import { initializeApp } from "./utils/initialization";
 import { HttpError } from "./utils/other";
+
+import createPodEndpoints from "./endpoints/pods";
+import createDeploymentEndpoints from "./endpoints/deployments";
 
 const app = express();
 app.use(bodyParser.json());
@@ -19,7 +21,9 @@ const kubeconfig = initializeKubeconfig();
 const server = http.createServer(app);
 const io = socketIO(server, { transports: ["websocket", "polling"] });
 app.set("subscriptionEndpoints", {});
+
 createPodEndpoints(kubeconfig, app);
+createDeploymentEndpoints(kubeconfig, app);
 
 new SubscriptionPool(io, kubeconfig, app);
 
