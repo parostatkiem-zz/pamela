@@ -1,6 +1,6 @@
 import injectHeaders from "./headerInjector";
 import fetch from "node-fetch";
-import { addJsonFieldToItems, calculateURL, HttpError } from "./other";
+import { addJsonField, addJsonFieldToItems, calculateURL, HttpError } from "./other";
 
 export const createGenericListEndpoint = (kubeconfig, app) => (
   path,
@@ -21,6 +21,35 @@ export const createGenericListEndpoint = (kubeconfig, app) => (
         throw new HttpError("Failed to get resources " + url, response.statusText, response.status);
       const responseJSON = await response.json();
       addJsonFieldToItems(responseJSON, extraItemHeader);
+      res.send(responseJSON);
+    } catch (e) {
+      console.error(e);
+      if (e instanceof HttpError) e.send(res);
+      else res.status(500).send("Internal server error occured while updating resource " + name);
+    }
+  });
+};
+
+export const createGenericGetEndpoint = (kubeconfig, app) => (
+  path,
+  urlTemplate,
+  isNamespaced = true,
+  extraItemHeader
+) => {
+  app.get(path, async (req, res) => {
+    try {
+      const agent = app.get("https_agent");
+      const opts = await injectHeaders({ agent }, req.headers, kubeconfig, app);
+      const url = calculateURL(urlTemplate, {
+        namespace: isNamespaced ? req.params.namespace : undefined,
+        name: req.params.name
+      });
+
+      const response = await fetch(url, opts);
+      if (!response.ok)
+        throw new HttpError("Failed to get resources " + url, response.statusText, response.status);
+      const responseJSON = await response.json();
+      addJsonField(responseJSON, extraItemHeader);
       res.send(responseJSON);
     } catch (e) {
       console.error(e);
