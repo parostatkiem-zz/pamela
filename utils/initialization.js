@@ -5,15 +5,14 @@ import fs from "fs";
 export async function initializeApp(app, kubeconfig) {
   app.set("token_cache", []);
   try {
-    const clusterUrl = kubeconfig.getCurrentCluster().server;
-    const url = process.env.jwksUri || `https://dex.${clusterUrl.slice(12, clusterUrl.length)}/keys`;
-
+    const domain = kubeconfig.getCurrentCluster().name;
+    const url = process.env.jwksUri || `https://dex.${domain}/keys`;
     const client = jwksClient({
       jwksUri: url,
     });
     await client.getKeysAsync(); // check if uri is correct
     app.set("jwks_client", client);
-    console.log("✔️  Setting up jwksClient ended with success", url);
+    console.log("✔️ Setting up jwksClient ended with success", url);
   } catch (e) {
     console.error("❌ Setting up jwksClient ended with error ", e);
   }
@@ -28,7 +27,7 @@ export async function initializeApp(app, kubeconfig) {
     });
 
     app.set("https_agent", sslConfiguredAgent);
-    console.log("✔️  Setting up https HTTPS agent");
+    console.log("✔️ Setting up https HTTPS agent");
   } catch (e) {
     console.error("❌ Setting up https HTTPS agent ended with error; an insecure connection will be used.");
   }
