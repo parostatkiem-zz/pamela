@@ -5,7 +5,8 @@ import fs from "fs";
 export async function initializeApp(app, kubeconfig) {
   app.set("token_cache", []);
   try {
-    const domain = kubeconfig.getCurrentCluster().name;
+    const serverUrl = kubeconfig.getCurrentCluster().server;
+    const domain = serverUrl.substring(serverUrl.indexOf('.')+1);
     const url = process.env.jwksUri || `https://dex.${domain}/keys`;
     const client = jwksClient({
       jwksUri: url,
