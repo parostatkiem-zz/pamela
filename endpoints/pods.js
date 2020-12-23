@@ -7,19 +7,19 @@ import {
 
 export default function createPodEndpoints(kubeconfig, app) {
   createGenericListEndpoint(kubeconfig, app)(
-    "/namespaces/:namespace/pods",
+    "/api/v1/namespaces/:namespace/pods",
     `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods`,
     true,
     { kind: "Pod", apiVersion: "v1" }
   );
 
   createGenericJsonUpdateEndpoint(kubeconfig, app)(
-    "/namespaces/:namespace/pods/:name",
+    "/api/v1/namespaces/:namespace/pods/:name",
     `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods/{name}`
   );
 
   createGenericDeleteEndpoint(kubeconfig, app)(
-    "/namespaces/:namespace/pods/:name",
+    "/api/v1/namespaces/:namespace/pods/:name",
     `${kubeconfig.getCurrentCluster().server}/api/v1/namespaces/{namespace}/pods/{name}`
   );
 
