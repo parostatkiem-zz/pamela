@@ -1,7 +1,7 @@
-export function createGenericCreateEndpoint(client, app) {
+export function createGenericCreateEndpoint(k8sClient, app) {
   app.post("/resource", async (req, res) => {
     try {
-      const result = await client.create(req.body);
+      const result = await k8sClient.create(req.body);
       res.status(result.response.statusCode).send(result.body);
     } catch (e) {
       console.error(e);

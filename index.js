@@ -23,9 +23,9 @@ const io = socketIO(server, { transports: ["websocket", "polling"] });
 app.set("subscriptionEndpoints", {});
 
 
-const client = KubernetesObjectApi.makeApiClient(kubeconfig);
+const k8sClient = KubernetesObjectApi.makeApiClient(kubeconfig);
 createPodEndpoints(kubeconfig, app);
-createGenericCreateEndpoint(client, app);
+createGenericCreateEndpoint(k8sClient, app);
 
 new SubscriptionPool(io, kubeconfig, app);
 
