@@ -11,7 +11,11 @@ export async function initializeApp(app, kubeconfig) {
     const client = jwksClient({
       jwksUri: url,
     });
-    await client.getKeysAsync(); // check if uri is correct
+
+    console.log("Checking JWKS client connection...");
+    // istio-proxy may not be ready yet, give it some retries...
+    await retry(async (_) => await client.getKeysAsync(), 20);
+
     app.set("jwks_client", client);
     console.log("✔️  Setting up jwksClient ended with success", url);
   } catch (e) {
@@ -32,4 +36,24 @@ export async function initializeApp(app, kubeconfig) {
   } catch (e) {
     console.error("❌ Setting up https HTTPS agent ended with error; an insecure connection will be used.");
   }
+}
+
+async function retry(fn, times) {
+  let lastError;
+  while (times > 0) {
+    try {
+      const result = await fn();
+      return result;
+    } catch (err) {
+      lastError = err;
+      await wait(500);
+      times--;
+      console.log("Retries left:", times);
+    }
+  }
+  throw new Error(lastError);
+}
+
+async function wait(ms) {
+  return new Promise((resolve, reject) => setTimeout(resolve, ms));
 }
