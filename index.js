@@ -9,8 +9,10 @@ import compression from "compression";
 
 import { initializeKubeconfig } from "./utils/kubeconfig";
 import createPodEndpoints from "./endpoints/pods";
+import { createGenericCreateEndpoint } from "./endpoints/generic";
 import { initializeApp } from "./utils/initialization";
 import { HttpError } from "./utils/other";
+import { KubernetesObjectApi } from "@kubernetes/client-node";
 
 const app = express();
 app.use(bodyParser.json());
@@ -19,7 +21,11 @@ const kubeconfig = initializeKubeconfig();
 const server = http.createServer(app);
 const io = socketIO(server, { transports: ["websocket", "polling"] });
 app.set("subscriptionEndpoints", {});
+
+
+const k8sClient = KubernetesObjectApi.makeApiClient(kubeconfig);
 createPodEndpoints(kubeconfig, app);
+createGenericCreateEndpoint(k8sClient, app);
 
 new SubscriptionPool(io, kubeconfig, app);
 
