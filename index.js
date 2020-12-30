@@ -23,7 +23,6 @@ createPodEndpoints(kubeconfig, app);
 
 new SubscriptionPool(io, kubeconfig, app);
 
-initializeApp(app, kubeconfig);
 app.use(compression()); //Compress all routes
 
 // keep the error handlers as the last routes added to the app
@@ -42,6 +41,9 @@ app.use(function (err, req, res, next) {
 const port = process.env.PORT || 3001;
 const address = process.env.ADDRESS || "localhost";
 console.log(`Domain used: ${kubeconfig.getCurrentCluster().name}`);
-server.listen(port, address, () => {
-  console.log(`👙 PAMELA 👄  server started @ ${port}!`);
+
+initializeApp(app, kubeconfig).then((_) => {
+  server.listen(port, address, () => {
+    console.log(`👙 PAMELA 👄  server started @ ${port}!`);
+  });
 });
