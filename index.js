@@ -42,8 +42,13 @@ const port = process.env.PORT || 3001;
 const address = process.env.ADDRESS || "localhost";
 console.log(`Domain used: ${kubeconfig.getCurrentCluster().name}`);
 
-initializeApp(app, kubeconfig).then((_) => {
-  server.listen(port, address, () => {
-    console.log(`👙 PAMELA 👄  server started @ ${port}!`);
+initializeApp(app, kubeconfig)
+  .then((_) => {
+    server.listen(port, address, () => {
+      console.log(`👙 PAMELA 👄  server started @ ${port}!`);
+    });
+  })
+  .catch((err) => {
+    console.error("PANIC!", err);
+    process.exit(1);
   });
-});
