@@ -20,6 +20,7 @@ export async function initializeApp(app, kubeconfig) {
     console.log("✔️  Setting up jwksClient ended with success", url);
   } catch (e) {
     console.error("❌ Setting up jwksClient ended with error ", e);
+    throw e;
   }
 
   try {
