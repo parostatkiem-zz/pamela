@@ -6,8 +6,8 @@ export async function initializeApp(app, kubeconfig) {
   app.set("token_cache", []);
   try {
     const clusterUrl = kubeconfig.getCurrentCluster().server;
-    const url = process.env.jwksUri || `https://dex.${clusterUrl.slice(12, clusterUrl.length)}/keys`;
-
+    const url = process.env.jwksUri || clusterUrl.replace(/:\/\/(api\.)?/, "://dex.") + "/keys";
+    console.log("JWKS URI: ", url);
     const client = jwksClient({
       jwksUri: url,
     });

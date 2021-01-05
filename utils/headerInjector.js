@@ -1,9 +1,11 @@
 import { validateToken } from "./tokenValidation";
 
 const injectHeaders = async (baseOptions, requestHeaders, kubeconfig, app) => {
-  const username = await validateToken(requestHeaders.authorization, app);
+  const tokenDecoded = await validateToken(requestHeaders.authorization, app);
+  const groupImpersonateHeaders = (tokenDecoded.groups || []).map((g) => ({ "Impersonate-Group": g }));
+  const emailImpersonateHeaders = { "Impersonate-User": tokenDecoded.email };
 
-  baseOptions.headers = { ...baseOptions.headers, "Impersonate-User": username };
+  baseOptions.headers = { ...baseOptions.headers, ...groupImpersonateHeaders, ...emailImpersonateHeaders };
 
   kubeconfig.applyAuthorizationHeader(baseOptions);
 

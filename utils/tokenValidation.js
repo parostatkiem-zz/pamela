@@ -16,7 +16,7 @@ export async function validateToken(token, app) {
   if (tokenFromCache && !hasCachedTokenExpired(tokenFromCache)) {
     // verified from cache
     console.log("token verified from cache"); // Even more not sure if we need this log...
-    return tokenFromCache.email;
+    return tokenFromCache;
   }
 
   const jwksClient = app.get("jwks_client");
@@ -37,10 +37,11 @@ export async function validateToken(token, app) {
       if (err) {
         console.error(err);
         reject("Token verification failed"); // todo: throw a 401 in this case
+        return;
       }
       console.log("Verified and cached a new token for user", decoded.email); // not sure if we need this log
       addTokenToCache(
-        { token: tokenNaked, email: decoded.email, expires: decoded.exp },
+        { token: tokenNaked, email: decoded.email, groups: decoded.groups, expires: decoded.exp },
         app
       );
       resolve(decoded);
@@ -49,5 +50,5 @@ export async function validateToken(token, app) {
 
   const tokenVerified = await verifyJWKS;
 
-  return tokenVerified.email;
+  return tokenVerified;
 }
