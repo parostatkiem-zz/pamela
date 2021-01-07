@@ -3,7 +3,10 @@ const socketIO = require("socket.io");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const http = require("http");
+const https = require('https');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const SubscriptionPool = require("./SubscriptionPool");
+import injectHeaders from "./utils/headerInjector";
 
 import compression from "compression";
 
@@ -28,6 +31,33 @@ const k8sClient = KubernetesObjectApi.makeApiClient(kubeconfig);
 createPodEndpoints(kubeconfig, app);
 createDeploymentEndpoints(kubeconfig, app);
 createGenericCreateEndpoint(k8sClient, app);
+
+const target = kubeconfig.getCurrentCluster().server;
+
+// const opts = {};
+// kubeconfig.applyToRequest(opts);
+// const agent = new https.Agent({ca: opts.ca});
+// console.log('agent',agent.ca)
+const agent = app.get("https_agent");
+console.log('target', target)
+const proxySettings = {
+  target,
+  agent,
+  headers: {
+    "Connection": "keep-alive"
+  },
+  ws: true,
+  secure: true,
+  changeOrigin: true,
+  logLevel: 'debug',
+  onProxyReq: async (proxyReq, req, res) => {
+    const opts = await injectHeaders({ agent }, req.headers, kubeconfig, app);
+    console.log('opts', opts)
+  },
+ 
+  onError,
+};
+app.use('/*', createProxyMiddleware(proxySettings));
 
 new SubscriptionPool(io, kubeconfig, app);
 
@@ -60,3 +90,7 @@ initializeApp(app, kubeconfig)
     console.error("PANIC!", err);
     process.exit(1);
   });
+
+function onError(err, req, res) {
+  console.log('Error in proxied request', err, req.method, req.url);
+}
