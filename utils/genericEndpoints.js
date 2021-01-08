@@ -25,7 +25,7 @@ export const createGenericListEndpoint = (kubeconfig, app) => (
     } catch (e) {
       console.error(e);
       if (e instanceof HttpError) e.send(res);
-      else res.status(500).send("Internal server error occured while updating resource " + name);
+      else res.status(500).send("Internal server error occured while updating resource ");
     }
   });
 };
@@ -42,7 +42,7 @@ export const createGenericGetEndpoint = (kubeconfig, app) => (
       const opts = await injectHeaders({ agent }, req.headers, kubeconfig, app);
       const url = calculateURL(urlTemplate, {
         namespace: isNamespaced ? req.params.namespace : undefined,
-        name: req.params.name
+        name: req.params.name,
       });
 
       const response = await fetch(url, opts);
