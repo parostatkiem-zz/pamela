@@ -30,8 +30,8 @@ function requestLogger(httpModule) {
   };
 }
 
-requestLogger(require("http"));
-requestLogger(require("https"));
+// requestLogger(require("http"));
+// requestLogger(require("https"));
 
 app.use(compression()); //Compress all routes
 
@@ -42,24 +42,27 @@ console.log(`Domain used: ${kubeconfig.getCurrentCluster().name}`);
 initializeApp(app, kubeconfig)
   .then((_) => {
     const server = http.createServer(app);
-
     const target = kubeconfig.getCurrentCluster().server;
-
     const agent = app.get("https_agent");
 
     const entryMiddleware = async (req, res, next) => {
-      const opts = await injectHeaders({}, req.headers, kubeconfig, app);
-      req.headers = opts.headers;
+      if (req.headers?.authorization) {
+        const opts = await injectHeaders({}, req.headers, kubeconfig, app);
+        req.headers = opts.headers;
+      }
       next();
     };
 
     const myProxy = createProxyMiddleware({
-      target: target,
-      secure: false,
+      target,
+      agent,
+      secure: true, //TODO make it dependent on the dev mode
       changeOrigin: true,
       selfHandleResponse: true,
+      ws: true,
       onProxyReq: (proxyReq, req, res) => {},
       onProxyRes: async (proxyRes, req, res) => {
+        proxyRes.statusCode = res.statusCode;
         proxyRes.pipe(res);
       },
     });
@@ -88,7 +91,3 @@ initializeApp(app, kubeconfig)
     console.error("PANIC!", err);
     process.exit(1);
   });
-
-function onError(err, req, res) {
-  console.log("Error in proxied request", err, req.method, req.url);
-}
