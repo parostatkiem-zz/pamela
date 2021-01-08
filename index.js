@@ -56,13 +56,14 @@ initializeApp(app, kubeconfig)
     const myProxy = createProxyMiddleware({
       target,
       agent,
-      secure: true, //TODO make it dependent on the dev mode
+      secure: process.env.NODE_ENV === "production",
       changeOrigin: true,
       selfHandleResponse: true,
       ws: true,
       onProxyReq: (proxyReq, req, res) => {},
       onProxyRes: async (proxyRes, req, res) => {
-        proxyRes.statusCode = res.statusCode;
+        res.statusCode = proxyRes.statusCode;
+        if (!res.getHeader("content-type")) res.setHeader("content-type", "text/json");
         proxyRes.pipe(res);
       },
     });
