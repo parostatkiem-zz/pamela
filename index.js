@@ -1,11 +1,12 @@
 const express = require("express");
-const socketIO = require("socket.io");
+// const URL = require("url");
+// const socketIO = require("socket.io");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const http = require("http");
 const https = require("https");
-const { createProxyMiddleware } = require("http-proxy-middleware");
-const SubscriptionPool = require("./SubscriptionPool");
+// const { createProxyMiddleware } = require("http-proxy-middleware");
+// const SubscriptionPool = require("./SubscriptionPool");
 import injectHeaders from "./utils/headerInjector";
 
 import compression from "compression";
@@ -16,22 +17,26 @@ import { HttpError } from "./utils/other";
 import { KubernetesObjectApi } from "@kubernetes/client-node";
 
 const app = express();
+
 app.use(bodyParser.json());
 app.use(cors({ origin: "*" })); //TODO
+const server = http.createServer(app);
+// const io = socketIO(server, { transports: ["websocket", "polling"] });
+// app.options("*", cors({ origin: "*" }));
 const kubeconfig = initializeKubeconfig();
-
-app.set("subscriptionEndpoints", {});
+// new SubscriptionPool(io, kubeconfig, app);
+// app.set("subscriptionEndpoints", {});
 
 function requestLogger(httpModule) {
   var original = httpModule.request;
   httpModule.request = function (options, callback) {
-    console.log(options.headers);
+    console.log("HTTPS request:", options.headers);
     return original(options, callback);
   };
 }
 
 // requestLogger(require("http"));
-// requestLogger(require("https"));
+requestLogger(require("https"));
 
 app.use(compression()); //Compress all routes
 
@@ -41,51 +46,38 @@ console.log(`Domain used: ${kubeconfig.getCurrentCluster().name}`);
 
 initializeApp(app, kubeconfig)
   .then((_) => {
-    const server = http.createServer(app);
     const target = kubeconfig.getCurrentCluster().server;
-    const agent = app.get("https_agent");
 
-    const entryMiddleware = async (req, res, next) => {
-      if (req.headers?.authorization) {
-        const opts = await injectHeaders({}, req.headers, kubeconfig, app);
-        req.headers = opts.headers;
-      }
-      next();
-    };
+    app.use(async (req, res, next) => {
+      const url = new URL(target);
+      const opts = await injectHeaders({}, req.headers, kubeconfig, app);
+      const options = {
+        hostname: url.hostname,
+        path: req.path,
+        headers: opts.headers,
+        agent: app.get("http_agent"),
+      };
 
-    const myProxy = createProxyMiddleware({
-      target,
-      agent,
-      secure: process.env.NODE_ENV === "production",
-      changeOrigin: true,
-      selfHandleResponse: true,
-      ws: true,
-      onProxyReq: (proxyReq, req, res) => {},
-      onProxyRes: async (proxyRes, req, res) => {
-        res.statusCode = proxyRes.statusCode;
-        if (!res.getHeader("content-type")) res.setHeader("content-type", "text/json");
-        proxyRes.pipe(res);
-      },
-    });
+      const k8sRequest = https
+        .request(options, function (k8sResponse) {
+          res.writeHead(k8sResponse.statusCode, {
+            "Content-Type": k8sResponse.headers["Content-Type"] || "text/json",
+          });
+          k8sResponse.pipe(res);
+        })
+        .on("error", function (err) {
+          console.error("Internal server error thrown", err);
+          res.statusMessage = "Internal server error";
+          res.statusCode = 500;
+          res.end();
+        });
+      k8sRequest.end();
 
-    app.use("*", entryMiddleware, myProxy);
-
-    // keep the error handlers as the last routes added to the app
-    app.use(function (req, res, next) {
-      res.status(404).send("URL " + req.url + " not found");
-    });
-    app.use(function (err, req, res, next) {
-      console.error(err);
-      if (err instanceof HttpError) {
-        e.send(res);
-        return;
-      }
-
-      res.status(500).send("Internal server error");
+      req.pipe(k8sRequest, { end: true });
     });
 
     server.listen(port, address, () => {
-      console.log(`👙 PAMELA 👄  server started @ ${port}!`);
+      console.log(`👙 PAMELA 👄 server started @ ${port}!`);
     });
   })
   .catch((err) => {
