@@ -19,9 +19,8 @@ class Subscription {
     }
   }
 
-  async addSubscriber(socket, resourceURL, configForResource, injectHeadersFn) {
+  async addSubscriber(socket, path, serverUrl, injectHeadersFn) {
     const opts = await injectHeadersFn({});
-
     let errOut = null;
     const stream = byline.createStream();
 
@@ -31,8 +30,6 @@ class Subscription {
       // const createdAt = data.object?.metadata?.creationTimestamp;
       // if (data.type === "ADDED" && createdAt && new Date(createdAt) < new Date()) return; // risky but I like to risk; skip ADDED type events bombing right after the subscription has been opened
 
-      if (configForResource.addJSONfield && data?.object)
-        addJsonField(data.object, configForResource.JSONfieldExtraHeader);
       this.notify(data);
     });
     stream.on("error", (err) => {
@@ -40,7 +37,9 @@ class Subscription {
     });
     stream.on("close", () => (errOut = new Error("Stream closed unexpectedly")));
 
-    const resp = await fetch(resourceURL, { method: "GET", ...opts });
+    const url = serverUrl + path + "?watch=true";
+    const resp = await fetch(url, { method: "GET", ...opts });
+    // console.log(resp);
 
     new Promise((resolve, reject) => {
       resp.body.pipe(stream);
@@ -66,45 +65,33 @@ class Subscription {
 class SubscriptionPool {
   constructor(io, kc, app) {
     this.io = io;
-    this.subscriptions = app.get("subscriptionEndpoints");
+    this.subscriptions = [];
 
     io.on("connection", (socket) => {
-      const { resource, authorization, ...otherParams } = socket.handshake.query; //TODO avoid encoding other params in the URL (no idea how)
-      const configForResource = this.subscriptions[resource];
+      console.log("got WS connection", socket.handshake.url.split("?")[0]);
+      const path = socket.handshake.url.split("?")[0];
+      const { authorization } = socket.handshake.query; //TODO avoid encoding other params in the URL (no idea how)
 
-      if (!configForResource) {
-        console.error("Client tried to subscribe to an unknown resource:", resource);
-        return;
+      if (!this.subscriptions[path]) {
+        this.subscriptions[path] = new Subscription();
       }
-
-      const resourceURL = this.getURLForResource(resource, otherParams);
-
-      if (!this.subscriptions[resourceURL]) {
-        this.subscriptions[resourceURL] = new Subscription();
-      }
-
+      const target = kc.getCurrentCluster().server;
       const agent = app.get("https_agent");
-
       const injectHeadersFn = (baseOpts) => injectHeaders({ agent, ...baseOpts }, { authorization }, kc, app);
 
-      this.subscriptions[resourceURL]
-        .addSubscriber(socket, resourceURL, configForResource, injectHeadersFn) // add subscriber asynchronously
+      this.subscriptions[path]
+        .addSubscriber(socket, path, target, injectHeadersFn) // add subscriber asynchronously
         .catch((e) => {
-          console.error("Failed to add subscriber for resource", resource, e);
+          console.error("Failed to add subscriber for path", path, e);
         });
 
       socket.on("disconnect", () => {
-        this.subscriptions[resourceURL].removeSubscriber(socket);
-        if (this.subscriptions[resourceURL].hasNoSubscribers) {
-          delete this.subscriptions[resourceURL];
+        this.subscriptions[path].removeSubscriber(socket);
+        if (this.subscriptions[path].hasNoSubscribers) {
+          delete this.subscriptions[path];
         }
       });
     });
-  }
-
-  getURLForResource(resource, templateVariables) {
-    if (!this.subscriptions[resource]) return;
-    return calculateURL(this.subscriptions[resource].urlTemplate, templateVariables);
   }
 }
 
