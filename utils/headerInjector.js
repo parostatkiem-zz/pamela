@@ -1,13 +1,14 @@
 import { validateToken } from "./tokenValidation";
 
-const injectHeaders = async (baseOptions, requestHeaders, kubeconfig, app) => {
+const injectAuthorization = async (requestHeaders, kubeconfig, app) => {
   const username = await validateToken(requestHeaders.authorization, app);
 
-  baseOptions.headers = { ...baseOptions.headers, "Impersonate-User": username };
+  //TODO: consider passing other request headers (doesn't work straightforward for some reason)
+  const result = { headers: { "Impersonate-User": username } };
 
-  kubeconfig.applyAuthorizationHeader(baseOptions);
+  kubeconfig.applyAuthorizationHeader(result);
 
-  return baseOptions;
+  return result.headers;
 };
 
-export default injectHeaders;
+export default injectAuthorization;

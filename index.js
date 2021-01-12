@@ -5,7 +5,7 @@ const http = require("http");
 const https = require("https");
 import compression from "compression";
 
-import injectHeaders from "./utils/headerInjector";
+import injectAuthorization from "./utils/headerInjector";
 import { initializeKubeconfig } from "./utils/kubeconfig";
 import { initializeApp } from "./utils/initialization";
 import { requestLogger } from "./utils/other";
@@ -41,11 +41,11 @@ initializeApp(app, kubeconfig)
   });
 
 async function handleRequest(req, res, next) {
-  const opts = await injectHeaders({}, req.headers, kubeconfig, app);
+  const headers = await injectAuthorization(req.headers, kubeconfig, app);
   const options = {
     hostname: k8sUrl.hostname,
     path: req.path,
-    headers: opts.headers,
+    headers,
     agent: app.get("http_agent"),
   };
 
