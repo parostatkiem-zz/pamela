@@ -4,7 +4,6 @@ const bodyParser = require("body-parser");
 const http = require("http");
 const https = require("https");
 import compression from "compression";
-
 import injectAuthorization from "./utils/headerInjector";
 import { initializeKubeconfig } from "./utils/kubeconfig";
 import { initializeApp } from "./utils/initialization";
@@ -30,7 +29,8 @@ console.log(`K8s server used: ${k8sUrl}`);
 
 initializeApp(app, kubeconfig)
   .then((_) => {
-    app.use(handleRequest);
+    const httpsAgent = app.get("https_agent");
+    app.use(handleRequest(httpsAgent));
     server.listen(port, address, () => {
       console.log(`👙 PAMELA 👄 server started @ ${port}!`);
     });
@@ -40,13 +40,13 @@ initializeApp(app, kubeconfig)
     process.exit(1);
   });
 
-async function handleRequest(req, res, next) {
+const handleRequest = (httpsAgent) => async (req, res, next) => {
   const headers = await injectAuthorization(req.headers, kubeconfig, app);
   const options = {
     hostname: k8sUrl.hostname,
-    path: req.path,
+    path: req.originalUrl,
     headers,
-    agent: app.get("http_agent"),
+    agent: httpsAgent,
   };
 
   const k8sRequest = https
@@ -54,6 +54,7 @@ async function handleRequest(req, res, next) {
       res.writeHead(k8sResponse.statusCode, {
         "Content-Type": k8sResponse.headers["Content-Type"] || "text/json",
       });
+
       k8sResponse.pipe(res);
     })
     .on("error", function (err) {
@@ -62,7 +63,7 @@ async function handleRequest(req, res, next) {
       res.statusCode = 500;
       res.end();
     });
-  k8sRequest.end();
+  // k8sRequest.end();
 
-  req.pipe(k8sRequest, { end: true });
-}
+  req.pipe(k8sRequest);
+};

@@ -32,7 +32,7 @@ export async function initializeApp(app, kubeconfig) {
       ca: cert,
     });
 
-    app.set("https_agent", sslConfiguredAgent);
+    app.set("https_agent", sslConfiguredAgent); // cannot use http.globalAgent because it breaks the JWT library
     console.log("✔️  Setting up https HTTPS agent");
   } catch (e) {
     console.error("❌ Setting up https HTTPS agent ended with error; an insecure connection will be used.");
