@@ -47,6 +47,7 @@ const handleRequest = (httpsAgent) => async (req, res, next) => {
     path: req.originalUrl,
     headers,
     agent: httpsAgent,
+    method: req.method,
   };
 
   const k8sRequest = https
