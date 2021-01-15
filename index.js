@@ -61,7 +61,7 @@ const handleRequest = (httpsAgent) => async (req, res, next) => {
       console.error("Internal server error thrown", err);
       res.statusMessage = "Internal server error";
       res.statusCode = 500;
-      res.end();
+      res.end({ message: err.message });
     });
 
   k8sRequest.end(Buffer.isBuffer(req.body) ? req.body : undefined);
