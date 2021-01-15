@@ -4,7 +4,7 @@ const injectAuthorization = async (requestHeaders, kubeconfig, app) => {
   const username = await validateToken(requestHeaders.authorization, app);
 
   //TODO: consider passing other request headers (doesn't work straightforward for some reason)
-  const result = { headers: { "Impersonate-User": username } };
+  const result = { ...requestHeaders, headers: { "Impersonate-User": username } };
 
   kubeconfig.applyAuthorizationHeader(result);
 
