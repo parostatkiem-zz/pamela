@@ -39,7 +39,7 @@ initializeApp(app, kubeconfig)
 
 const handleRequest = (httpsAgent) => async (req, res, next) => {
   const headers = await injectAuthorization(req.headers, kubeconfig, app);
-  if (req.method === "PATCH") headers["Content-Type"] = "application/json-patch+json"; // dirty hack
+  if (req.method === "PATCH") headers["Content-Type"] = "application/json-patch+json"; // dirty hack; TODO: somehow pass the header further
   const options = {
     hostname: k8sUrl.hostname,
     path: req.originalUrl,
@@ -65,6 +65,5 @@ const handleRequest = (httpsAgent) => async (req, res, next) => {
     });
 
   k8sRequest.end(Buffer.isBuffer(req.body) ? req.body : undefined);
-
   req.pipe(k8sRequest);
 };
