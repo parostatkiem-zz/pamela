@@ -15,7 +15,6 @@ export async function validateToken(token, app) {
   const tokenFromCache = app.get(CACHE_KEY).find((t) => t.token === tokenNaked);
   if (tokenFromCache && !hasCachedTokenExpired(tokenFromCache)) {
     // verified from cache
-    console.log("token verified from cache"); // Even more not sure if we need this log...
     return tokenFromCache;
   }
 
@@ -37,7 +36,6 @@ export async function validateToken(token, app) {
       if (err) {
         console.error(err);
         reject("Token verification failed"); // todo: throw a 401 in this case
-        return;
       }
       console.log("Verified and cached a new token for user", decoded.email); // not sure if we need this log
       addTokenToCache(

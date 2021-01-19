@@ -1,62 +1,69 @@
 const express = require("express");
-const socketIO = require("socket.io");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const http = require("http");
-const SubscriptionPool = require("./SubscriptionPool");
-
+const https = require("https");
 import compression from "compression";
-
+import injectAuthorization from "./utils/headerInjector";
 import { initializeKubeconfig } from "./utils/kubeconfig";
 import { initializeApp } from "./utils/initialization";
-import { HttpError } from "./utils/other";
-import { KubernetesObjectApi } from "@kubernetes/client-node";
-
-import createPodEndpoints from "./endpoints/pods";
-import createDeploymentEndpoints from "./endpoints/deployments";
-import { createGenericCreateEndpoint } from "./endpoints/generic";
+import { requestLogger } from "./utils/other";
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.raw({ type: "*/*" }));
 app.use(cors({ origin: "*" })); //TODO
-const kubeconfig = initializeKubeconfig();
-const server = http.createServer(app);
-const io = socketIO(server, { transports: ["websocket", "polling"] });
-app.set("subscriptionEndpoints", {});
-
-const k8sClient = KubernetesObjectApi.makeApiClient(kubeconfig);
-createPodEndpoints(kubeconfig, app);
-createDeploymentEndpoints(kubeconfig, app);
-createGenericCreateEndpoint(k8sClient, app);
-
-new SubscriptionPool(io, kubeconfig, app);
-
 app.use(compression()); //Compress all routes
 
-// keep the error handlers as the last routes added to the app
-app.use(function (req, res, next) {
-  res.status(404).send("URL " + req.url + " not found");
-});
-app.use(function (err, req, res, next) {
-  if (err instanceof HttpError) {
-    e.send(res);
-    return;
-  }
+const server = http.createServer(app);
+const kubeconfig = initializeKubeconfig();
+const k8sUrl = new URL(kubeconfig.getCurrentCluster().server);
 
-  res.status(500).send("Internal server error");
-});
+// requestLogger(require("http")); //uncomment this to log the outgoing traffic
+// requestLogger(require("https")); //uncomment this to log the outgoing traffic
 
 const port = process.env.PORT || 3001;
 const address = process.env.ADDRESS || "localhost";
-console.log(`Domain used: ${kubeconfig.getCurrentCluster().name}`);
+console.log(`K8s server used: ${k8sUrl}`);
 
 initializeApp(app, kubeconfig)
   .then((_) => {
+    const httpsAgent = app.get("https_agent");
+    app.use(handleRequest(httpsAgent));
     server.listen(port, address, () => {
-      console.log(`👙 PAMELA 👄  server started @ ${port}!`);
+      console.log(`👙 PAMELA 👄 server started @ ${port}!`);
     });
   })
   .catch((err) => {
     console.error("PANIC!", err);
     process.exit(1);
   });
+
+const handleRequest = (httpsAgent) => async (req, res, next) => {
+  const headers = await injectAuthorization(req.headers, kubeconfig, app);
+  if (req.method === "PATCH") headers["Content-Type"] = "application/json-patch+json"; // dirty hack; TODO: somehow pass the header further
+  const options = {
+    hostname: k8sUrl.hostname,
+    path: req.originalUrl,
+    headers,
+    body: req.body,
+    agent: httpsAgent,
+    method: req.method,
+  };
+
+  const k8sRequest = https
+    .request(options, function (k8sResponse) {
+      res.writeHead(k8sResponse.statusCode, {
+        "Content-Type": k8sResponse.headers["Content-Type"] || "text/json",
+      });
+
+      k8sResponse.pipe(res);
+    })
+    .on("error", function (err) {
+      console.error("Internal server error thrown", err);
+      res.statusMessage = "Internal server error";
+      res.statusCode = 500;
+      res.end({ message: err.message });
+    });
+
+  k8sRequest.end(Buffer.isBuffer(req.body) ? req.body : undefined);
+  req.pipe(k8sRequest);
+};
