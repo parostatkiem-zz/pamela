@@ -3,7 +3,6 @@ const cors = require("cors");
 const http = require("http");
 const https = require("https");
 import compression from "compression";
-import injectAuthorization from "./utils/headerInjector";
 import { initializeKubeconfig } from "./utils/kubeconfig";
 import { initializeApp } from "./utils/initialization";
 import { requestLogger } from "./utils/other";
@@ -37,13 +36,12 @@ initializeApp(app, kubeconfig)
     process.exit(1);
   });
 
-const handleRequest = (httpsAgent) => async (req, res, next) => {
-  const headers = await injectAuthorization(req.headers, kubeconfig, app);
-  if (req.method === "PATCH") headers["Content-Type"] = "application/json-patch+json"; // dirty hack; TODO: somehow pass the header further
+const handleRequest = (httpsAgent) => async (req, res) => {
+  delete req.headers.host; // remove host in order not to confuse APIServer
   const options = {
     hostname: k8sUrl.hostname,
     path: req.originalUrl,
-    headers,
+    headers: req.headers,
     body: req.body,
     agent: httpsAgent,
     method: req.method,
@@ -61,7 +59,7 @@ const handleRequest = (httpsAgent) => async (req, res, next) => {
       console.error("Internal server error thrown", err);
       res.statusMessage = "Internal server error";
       res.statusCode = 500;
-      res.end({ message: err.message });
+      res.end(Buffer.from(JSON.stringify({message: err})));
     });
 
   k8sRequest.end(Buffer.isBuffer(req.body) ? req.body : undefined);
