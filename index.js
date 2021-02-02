@@ -41,7 +41,7 @@ const handleRequest = (httpsAgent) => async (req, res) => {
   const options = {
     hostname: k8sUrl.hostname,
     path: req.originalUrl,
-    headers: req.headers,
+    headers: { ...req.headers, "Accept-Encoding": "" }, // a bit of explaination: k8s API handles accepting gzip but randomly decides to actually use it or not.
     body: req.body,
     agent: httpsAgent,
     method: req.method,
